@@ -3,12 +3,14 @@
 from typing import Optional, List
 from pydantic import BaseModel
 from datetime import datetime
+from sqlmodel import Field, SQLModel
 
-class CategoryCreate(BaseModel):
+class CategoryCreate(SQLModel):
     name: str
     description: str
 
 class CategoryRead(BaseModel):
+
     id: int
     name: str
 

@@ -1,11 +1,25 @@
 
 
+from typing import Annotated
+from fastapi import Depends
 from sqlmodel import Session, select
+
+from .inventory_db import get_session
 from .inventory_model import Category, Product, Inventory
 from datetime import datetime, timedelta, timezone
 
 # Category CRUD operations
-def create_category(session: Session, category: Category):
+"""
+    Creates a new category in the database.
+    
+    Parameters:
+        session: Annotated[Session, Depends(get_session)] - the database session
+        category: Category - the category object to be added
+    
+    Returns:
+        Category - the newly created category
+    """
+def create_category(session: Annotated[Session, Depends(get_session)], category: Category):
     session.add(category)
     session.commit()
     session.refresh(category)

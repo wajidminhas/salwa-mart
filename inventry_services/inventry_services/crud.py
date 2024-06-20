@@ -25,9 +25,13 @@ def create_category(session: Annotated[Session, Depends(get_session)], category:
     session.refresh(category)
     return category
 
+
+    # ***********     ********************     *************
 def get_categories(session: Session):
     return session.exec(select(Category)).all()
 
+
+     # ***********     ********************     *************
 def get_category(session: Session, category_id: int):
     return session.get(Category, category_id)
 
@@ -38,11 +42,16 @@ def create_product(session: Session, product: Product):
     session.refresh(product)
     return product
 
+     # ***********     ********************     *************
 def get_products(session: Session):
     return session.exec(select(Product)).all()
 
+     # ***********     ********************     *************
+
 def get_product(session: Session, product_id: int):
     return session.get(Product, product_id)
+
+     # ***********     ********************     *************
 
 # Inventory CRUD operations
 def create_inventory_item(session: Session, inventory_item: Inventory):
@@ -51,8 +60,13 @@ def create_inventory_item(session: Session, inventory_item: Inventory):
     session.refresh(inventory_item)
     return inventory_item
 
+     # ***********     ********************     *************
+
 def get_inventory_item(session: Session, item_id: int):
     return session.get(Inventory, item_id)
+
+
+     # ***********     ********************     *************
 
 def update_inventory_item(session: Session, item_id: int, item_data: dict):
     item = session.get(Inventory, item_id)
@@ -65,6 +79,8 @@ def update_inventory_item(session: Session, item_id: int, item_data: dict):
         session.refresh(item)
         return item
     return None
+
+     # ***********     ********************     *************
 
 def delete_inventory_item(session: Session, item_id: int):
     item = session.get(Inventory, item_id)

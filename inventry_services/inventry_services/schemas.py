@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from datetime import datetime
 from sqlmodel import Field, SQLModel
 
-class CategoryCreate(SQLModel):
+class CategoryCreate(BaseModel):
     name: str
     description: str
 

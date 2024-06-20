@@ -13,32 +13,29 @@ router = APIRouter()
 # Category routes
 @router.post("/categories/")
 def create_category_endpoint(category: CategoryCreate, session: Annotated[Session, Depends(get_session)]):
-    category =  Category(
-        name=category.name,
-        description=category.description
-    )
+    category =  Category(**category.model_dump())
     return create_category(session, category)
 
-# @router.get("/categories/", response_model=List[CategoryRead])
-# aysnc def get_categories_endpoint(session: Annotated[Session, Depends(get_session)]):
-#     return get_categories(session)
+@router.get("/categories/", response_model=List[CategoryRead])
+def get_categories_endpoint(session: Annotated[Session, Depends(get_session)]):
+    return get_categories(session)
 
-# # Product routes
-# @router.post("/products/", response_model=ProductRead)
-# aysnc def create_product_endpoint(product: ProductCreate, session: Annotated[Session, Depends(get_session)]):
-#     product = Product(**product.model_dump())
-#     return create_product(session, product)
+# Product routes
+@router.post("/products/", response_model=ProductRead)
+def create_product_endpoint(product: ProductCreate, session: Annotated[Session, Depends(get_session)]):
+    product = Product(**product.model_dump())
+    return create_product(session, product)
 
-# @router.get("/products/", response_model=List[ProductRead])
-# aysnc def get_products_endpoint( session: Annotated[Session, Depends(get_session)]):
-#     return get_products(session)
+@router.get("/products/", response_model=List[ProductRead])
+def get_products_endpoint( session: Annotated[Session, Depends(get_session)]):
+    return get_products(session)
 
-# @router.get("/products/{product_id}", response_model=ProductRead)
-# aysnc def get_product_endpoint(product_id: int, session: Annotated[Session, Depends(get_session)]):
-#     product = get_product(session, product_id)
-#     if not product:
-#         raise HTTPException(status_code=404, detail="Product not found")
-#     return product
+@router.get("/products/{product_id}", response_model=ProductRead)
+def get_product_endpoint(product_id: int, session: Annotated[Session, Depends(get_session)]):
+    product = get_product(session, product_id)
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    return product
 
 # # Inventory routes
 # @router.post("/inventory/", response_model=InventoryRead)

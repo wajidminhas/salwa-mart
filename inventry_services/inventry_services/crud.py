@@ -1,91 +1,115 @@
-
-
-from typing import Annotated
-from fastapi import Depends
 from sqlmodel import Session, select
+from .models import Item, Category, Supplier, Transaction,StockThreshold
 
-from .database import get_session
-from .models import Category, Product, Inventory
-from datetime import datetime, timedelta, timezone
-
-# Category CRUD operations
-"""
-    Creates a new category in the database.
-    
-    Parameters:
-        session: Annotated[Session, Depends(get_session)] - the database session
-        category: Category - the category object to be added
-    
-    Returns:
-        Category - the newly created category
-    """
-def create_category(session: Annotated[Session, Depends(get_session)], category: Category):
+# Category CRUD
+def create_category(session: Session, category: Category):
     session.add(category)
     session.commit()
     session.refresh(category)
     return category
 
-
-    # ***********     ********************     *************
-def get_categories(session: Session):
-    return session.exec(select(Category)).all()
-
-
-     # ***********     ********************     *************
 def get_category(session: Session, category_id: int):
     return session.get(Category, category_id)
 
-# Product CRUD operations
-def create_product(session: Session, product: Product):
-    session.add(product)
+# Supplier CRUD
+def create_supplier(session: Session, supplier: Supplier):
+    session.add(supplier)
     session.commit()
-    session.refresh(product)
-    return product
+    session.refresh(supplier)
+    return supplier
 
-     # ***********     ********************     *************
-def get_products(session: Session):
-    return session.exec(select(Product)).all()
+def get_supplier(session: Session, supplier_id: int):
+    return session.get(Supplier, supplier_id)
 
-     # ***********     ********************     *************
-
-def get_product(session: Session, product_id: int):
-    return session.get(Product, product_id)
-
-     # ***********     ********************     *************
-
-# Inventory CRUD operations
-def create_inventory_item(session: Session, inventory_item: Inventory):
-    session.add(inventory_item)
+# Item CRUD
+def create_item(session: Session, item: Item):
+    session.add(item)
     session.commit()
-    session.refresh(inventory_item)
-    return inventory_item
+    session.refresh(item)
+    return item
 
-     # ***********     ********************     *************
+def get_item(session: Session, item_id: int):
+    return session.get(Item, item_id)
 
-def get_inventory_item(session: Session, item_id: int):
-    return session.get(Inventory, item_id)
-
-
-     # ***********     ********************     *************
-
-def update_inventory_item(session: Session, item_id: int, item_data: dict):
-    item = session.get(Inventory, item_id)
+def update_stock_level(session: Session, item_id: int, new_stock_level: int):
+    item = session.get(Item, item_id)
     if item:
-        for key, value in item_data.items():
-            setattr(item, key, value)
-        item.last_updated = datetime.now(timezone.utc)
+        item.stock_level = new_stock_level
         session.add(item)
         session.commit()
         session.refresh(item)
         return item
     return None
 
-     # ***********     ********************     *************
-
-def delete_inventory_item(session: Session, item_id: int):
-    item = session.get(Inventory, item_id)
+def delete_item(session: Session, item_id: int):
+    item = session.get(Item, item_id)
     if item:
         session.delete(item)
         session.commit()
         return True
     return False
+
+# Transaction CRUD
+def create_transaction(session: Session, transaction: Transaction):
+    item = session.get(Item, transaction.item_id)
+    if not item:
+        return None
+
+    if transaction.transaction_type == 'in':
+        item.stock_level += transaction.quantity
+    elif transaction.transaction_type == 'out':
+        if item.stock_level < transaction.quantity:
+            raise ValueError("Insufficient stock")
+        item.stock_level -= transaction.quantity
+    else:
+        raise ValueError("Invalid transaction type")
+
+    session.add(transaction)
+    session.add(item)
+    session.commit()
+    session.refresh(transaction)
+
+    # Check if we need to reorder
+    check_reorder(session, item)
+
+    return transaction
+
+
+def get_transactions_by_item(session: Session, item_id: int):
+    statement = select(Transaction).where(Transaction.item_id == item_id)
+    results = session.exec(statement)
+    return results.all()
+
+
+def get_stock_threshold(session: Session, item_id: int):
+    statement = select(StockThreshold).where(StockThreshold.item_id == item_id)
+    return session.exec(statement).first()
+
+def check_reorder(session: Session, item: Item):
+    threshold = get_stock_threshold(session, item.id)
+    if threshold and item.stock_level < threshold.minimum_level:
+        place_order(session, item, threshold)
+
+def place_order(session: Session, item: Item, threshold: StockThreshold):
+    order_quantity = max(threshold.maximum_level - item.stock_level, item.reorder_quantity)
+    order_transaction = Transaction(
+        item_id=item.id,
+        transaction_type='in',
+        quantity=order_quantity
+    )
+    item.stock_level += order_quantity
+    session.add(order_transaction)
+    session.add(item)
+    session.commit()
+    session.refresh(order_transaction)
+    return order_transaction
+
+def create_stock_threshold(session: Session, threshold: StockThreshold):
+    session.add(threshold)
+    session.commit()
+    session.refresh(threshold)
+    return threshold
+
+def get_stock_threshold(session: Session, item_id: int):
+    statement = select(StockThreshold).where(StockThreshold.item_id == item_id)
+    return session.exec(statement).first()

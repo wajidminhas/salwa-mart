@@ -1,15 +1,22 @@
 from fastapi import FastAPI, Depends, HTTPException
+from contextlib import asynccontextmanager
 from sqlmodel import Session
-from .database import init_db, get_session
-from .models import Item, Category, Supplier, Transaction
-from .schemas import ItemCreate, ItemRead, ItemUpdate, CategoryCreate, CategoryRead, SupplierCreate, SupplierRead, TransactionCreate, TransactionRead
-from .crud import create_item, get_item, update_stock_level, delete_item, create_category, get_category, create_supplier, get_supplier, create_transaction, get_transactions_by_item
+from .database import create_db_table, get_session
+from .models import Item, Category, Supplier, Transaction, StockThreshold
+from .schemas import ItemCreate, ItemRead, ItemUpdate, CategoryCreate, CategoryRead, SupplierCreate, StockThresholdRead, SupplierRead, TransactionCreate, TransactionRead, TransactionUpdate, StockThresholdCreate
+from .crud import create_item, get_item, update_stock_level, delete_item, create_category, get_category, create_supplier, get_supplier, create_transaction, get_transactions_by_item, create_stock_threshold, get_stock_threshold
 
-app = FastAPI()
 
-@app.on_event("startup")
-def on_startup():
-    init_db()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print("Creating database tables...")
+    create_db_table()
+    yield
+    print("Closing database connection...")
+
+app = FastAPI(lifespan=lifespan, title="Inventry Service API")
 
 # Category endpoints
 @app.post("/categories/", response_model=CategoryRead)
@@ -72,3 +79,18 @@ def create_new_transaction(transaction: TransactionCreate, session: Session = De
 
 # @app.get("/items/{item_id}/transactions/", response_model=List[TransactionRead])
 # def read_transactions
+
+
+
+# Stock Threshold endpoints
+@app.post("/stock_thresholds/", response_model=StockThresholdRead)
+def create_new_stock_threshold(threshold: StockThresholdCreate, session: Session = Depends(get_session)):
+    db_threshold = create_stock_threshold(session, StockThreshold(**threshold.dict()))
+    return db_threshold
+
+@app.get("/stock_thresholds/{item_id}", response_model=StockThresholdRead)
+def read_stock_threshold(item_id: int, session: Session = Depends(get_session)):
+    db_threshold = get_stock_threshold(session, item_id)
+    if db_threshold is None:
+        raise HTTPException(status_code=404, detail="Stock threshold not found")
+    return db_threshold

@@ -4,8 +4,8 @@ from typing import Annotated
 from fastapi import Depends
 from sqlmodel import Session, select
 
-from .inventory_db import get_session
-from .inventory_model import Category, Product, Inventory
+from .database import get_session
+from .models import Category, Product, Inventory
 from datetime import datetime, timedelta, timezone
 
 # Category CRUD operations

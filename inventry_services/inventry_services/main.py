@@ -1,59 +1,74 @@
+from fastapi import FastAPI, Depends, HTTPException
+from sqlmodel import Session
+from .database import init_db, get_session
+from .models import Item, Category, Supplier, Transaction
+from .schemas import ItemCreate, ItemRead, ItemUpdate, CategoryCreate, CategoryRead, SupplierCreate, SupplierRead, TransactionCreate, TransactionRead
+from .crud import create_item, get_item, update_stock_level, delete_item, create_category, get_category, create_supplier, get_supplier, create_transaction, get_transactions_by_item
 
+app = FastAPI()
 
-from fastapi import FastAPI
-from inventry_services.inventory_db import create_db_table
-from .rotuer import router
-from contextlib import asynccontextmanager
+@app.on_event("startup")
+def on_startup():
+    init_db()
 
-# app = FastAPI()
+# Category endpoints
+@app.post("/categories/", response_model=CategoryRead)
+def create_new_category(category: CategoryCreate, session: Session = Depends(get_session)):
+    db_category = create_category(session, Category(**category.dict()))
+    return db_category
 
-# @asynccontextmanager
-# async def lifespan(app:FastAPI):
-#     print("Application is starting")
-    
-#     create_db_table()
-#     yield
-#     print("table created") 
+@app.get("/categories/{category_id}", response_model=CategoryRead)
+def read_category(category_id: int, session: Session = Depends(get_session)):
+    db_category = get_category(session, category_id)
+    if db_category is None:
+        raise HTTPException(status_code=404, detail="Category not found")
+    return db_category
 
-        
+# Supplier endpoints
+@app.post("/suppliers/", response_model=SupplierRead)
+def create_new_supplier(supplier: SupplierCreate, session: Session = Depends(get_session)):
+    db_supplier = create_supplier(session, Supplier(**supplier.dict()))
+    return db_supplier
 
+@app.get("/suppliers/{supplier_id}", response_model=SupplierRead)
+def read_supplier(supplier_id: int, session: Session = Depends(get_session)):
+    db_supplier = get_supplier(session, supplier_id)
+    if db_supplier is None:
+        raise HTTPException(status_code=404, detail="Supplier not found")
+    return db_supplier
 
+# Item endpoints
+@app.post("/items/", response_model=ItemRead)
+def create_new_item(item: ItemCreate, session: Session = Depends(get_session)):
+    db_item = create_item(session, Item(**item.dict()))
+    return db_item
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """
-    Context manager for the FastAPI lifespan events.
+@app.get("/items/{item_id}", response_model=ItemRead)
+def read_item(item_id: int, session: Session = Depends(get_session)):
+    db_item = get_item(session, item_id)
+    if db_item is None:
+        raise HTTPException(status_code=404, detail="Item not found")
+    return db_item
 
-    This function is executed when the application starts and stops.
-    It creates the database table and prints a message when the application starts and stops.
+@app.put("/items/{item_id}", response_model=ItemRead)
+def update_item_stock(item_id: int, item: ItemUpdate, session: Session = Depends(get_session)):
+    db_item = update_stock_level(session, item_id, item.stock_level)
+    if db_item is None:
+        raise HTTPException(status_code=404, detail="Item not found")
+    return db_item
 
-    Args:
-        app (FastAPI): The FastAPI application.
+@app.delete("/items/{item_id}")
+def delete_existing_item(item_id: int, session: Session = Depends(get_session)):
+    success = delete_item(session, item_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Item not found")
+    return {"ok": True}
 
-    Yields:
-        None
-    """
-    # Print a message when the application starts
-    print("Application is starting")
+# Transaction endpoints
+@app.post("/transactions/", response_model=TransactionRead)
+def create_new_transaction(transaction: TransactionCreate, session: Session = Depends(get_session)):
+    db_transaction = create_transaction(session, Transaction(**transaction.dict()))
+    return db_transaction
 
-    # Create the database table
-    create_db_table()
-
-    # Yield control to the application
-    yield
-
-    # Print a message when the application stops
-    print("table created")
-
-        
-
-app:FastAPI = FastAPI(lifespan=lifespan)
-
-app.include_router(router, prefix="/api", tags=["inventory"])
-
-@app.get("/")
-def read_root():
-    return {"Hello": "World"}
-
-
-# app.include_router(router, prefix="/api", tags=["inventory"])
+# @app.get("/items/{item_id}/transactions/", response_model=List[TransactionRead])
+# def read_transactions

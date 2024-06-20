@@ -1,53 +1,60 @@
-
-
-from typing import Optional, List
 from pydantic import BaseModel
+from typing import Optional, List
 from datetime import datetime
-from sqlmodel import Field, SQLModel
 
 class CategoryCreate(BaseModel):
     name: str
-    description: str
+    description: Optional[str] = None
 
 class CategoryRead(BaseModel):
-
     id: int
-    name: str
-
-    class Config:
-        orm_mode = True
-
-class ProductCreate(BaseModel):
     name: str
     description: Optional[str] = None
-    price: float
-    category_id: int
-
-class ProductRead(BaseModel):
-    id: int
-    name: str
-    description: Optional[str]
-    price: float
-    category: CategoryRead
 
     class Config:
         orm_mode = True
 
-class InventoryCreate(BaseModel):
-    product_id: int
-    quantity: int
-    reorder_level: int
+class SupplierCreate(BaseModel):
+    name: str
+    contact_info: Optional[str] = None
 
-class InventoryUpdate(BaseModel):
-    quantity: Optional[int] = None
-    reorder_level: Optional[int] = None
-
-class InventoryRead(BaseModel):
+class SupplierRead(BaseModel):
     id: int
-    product: ProductRead
+    name: str
+    contact_info: Optional[str] = None
+
+    class Config:
+        orm_mode = True
+
+class ItemCreate(BaseModel):
+    name: str
+    description: Optional[str] = None
+    stock_level: int
+    category_id: Optional[int]
+    supplier_id: Optional[int]
+
+class ItemRead(BaseModel):
+    id: int
+    name: str
+    description: Optional[str] = None
+    stock_level: int
+    category_id: Optional[int]
+    supplier_id: Optional[int]
+
+    class Config:
+        orm_mode = True
+
+class TransactionCreate(BaseModel):
+    item_id: int
+    transaction_type: str
     quantity: int
-    reorder_level: int
-    last_updated: datetime
+
+class TransactionRead(BaseModel):
+    id: int
+    item_id: int
+    transaction_type: str
+    quantity: int
+    timestamp: datetime
 
     class Config:
         orm_mode = True

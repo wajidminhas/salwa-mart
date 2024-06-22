@@ -13,7 +13,7 @@ class Supplier(SQLModel, table=True):
     name: str
     contact_info: Optional[str] = None
     items: List["Item"] = Relationship(back_populates="supplier")
-    email: Optional[str] = None
+    # email: str
 
 
 class Item(SQLModel, table=True):
@@ -28,6 +28,8 @@ class Item(SQLModel, table=True):
     category: Optional[Category] = Relationship(back_populates="items")
     supplier: Optional[Supplier] = Relationship(back_populates="items")
     transactions: List["Transaction"] = Relationship(back_populates="item")
+    threshold: Optional["StockThreshold"] = Relationship(back_populates="item")
+
 
 class Transaction(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)

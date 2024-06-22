@@ -74,6 +74,17 @@ def create_transaction(session: Session, transaction: Transaction):
 
     return transaction
 
+def get_all_transactions(session: Session):
+    return session.exec(select(Transaction)).all()
+
+def delete_transaction(session: Session, transaction_id: int):
+    transaction = session.get(Transaction, transaction_id)
+    if transaction:
+        session.delete(transaction)
+        session.commit()
+        return True
+    return False
+
 
 def get_transactions_by_item(session: Session, item_id: int):
     statement = select(Transaction).where(Transaction.item_id == item_id)

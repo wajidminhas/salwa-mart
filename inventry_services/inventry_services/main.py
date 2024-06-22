@@ -1,10 +1,11 @@
+from typing import List
 from fastapi import FastAPI, Depends, HTTPException
 from contextlib import asynccontextmanager
 from sqlmodel import Session
 from .database import create_db_table, get_session
 from .models import Item, Category, Supplier, Transaction, StockThreshold
 from .schemas import ItemCreate, ItemRead, ItemUpdate, CategoryCreate, CategoryRead, SupplierCreate, StockThresholdRead, SupplierRead, TransactionCreate, TransactionRead, TransactionUpdate, StockThresholdCreate
-from .crud import create_item, get_item, update_stock_level, delete_item, create_category, get_category, create_supplier, get_supplier, create_transaction, get_transactions_by_item, create_stock_threshold, get_stock_threshold
+from .crud import create_item, delete_transaction, get_all_transactions, get_item, update_stock_level, delete_item, create_category, get_category, create_supplier, get_supplier, create_transaction, get_transactions_by_item, create_stock_threshold, get_stock_threshold
 
 
 
@@ -17,6 +18,9 @@ async def lifespan(app: FastAPI):
     print("Closing database connection...")
 
 app = FastAPI(lifespan=lifespan, title="Inventry Service API")
+
+
+# ***************** START OF CATEGORIES ENDPOINTS **********************
 
 # Category endpoints
 @app.post("/categories/", response_model=CategoryRead)
@@ -31,11 +35,30 @@ def read_category(category_id: int, session: Session = Depends(get_session)):
         raise HTTPException(status_code=404, detail="Category not found")
     return db_category
 
+     # *************** END OF CATEGORIES **********************
+
+
+    # ***************** START OF Supplier ENDPOINTS **********************
+
+
 # Supplier endpoints
 @app.post("/suppliers/", response_model=SupplierRead)
 def create_new_supplier(supplier: SupplierCreate, session: Session = Depends(get_session)):
     db_supplier = create_supplier(session, Supplier(**supplier.dict()))
     return db_supplier
+
+@app.put("/suppliers/{supplier_id}", response_model=SupplierRead)
+def update_supplier(supplier_id: int, supplier: SupplierCreate, session: Session = Depends(get_session)):
+    db_supplier = get_supplier(session, supplier_id)
+    if db_supplier is None:
+        raise HTTPException(status_code=404, detail="Supplier not found")
+    return db_supplier
+
+@app.delete("/suppliers/{supplier_id}")
+def delete_supplier(supplier_id: int, session: Session = Depends(get_session)):
+    if delete_supplier(session, supplier_id):
+        return {"deleted": True}
+    return {"deleted": False}
 
 @app.get("/suppliers/{supplier_id}", response_model=SupplierRead)
 def read_supplier(supplier_id: int, session: Session = Depends(get_session)):
@@ -43,6 +66,11 @@ def read_supplier(supplier_id: int, session: Session = Depends(get_session)):
     if db_supplier is None:
         raise HTTPException(status_code=404, detail="Supplier not found")
     return db_supplier
+
+    # *************** END OF SUPPLIER ENDPOINTS **********************
+
+
+    # *************** START OF ITEM ENDPOINTS **********************
 
 # Item endpoints
 @app.post("/items/", response_model=ItemRead)
@@ -71,15 +99,37 @@ def delete_existing_item(item_id: int, session: Session = Depends(get_session)):
         raise HTTPException(status_code=404, detail="Item not found")
     return {"ok": True}
 
+
+# *************** END OF ITEM ENDPOINTS **********************
+
+
+# *************** START OF TRANSACTION ENDPOINTS **********************
+
 # Transaction endpoints
 @app.post("/transactions/", response_model=TransactionRead)
 def create_new_transaction(transaction: TransactionCreate, session: Session = Depends(get_session)):
     db_transaction = create_transaction(session, Transaction(**transaction.dict()))
     return db_transaction
 
-# @app.get("/items/{item_id}/transactions/", response_model=List[TransactionRead])
-# def read_transactions
+@app.get("/items/{item_id}/transactions/", response_model=List[TransactionRead])
+def read_transactions_by_item(item_id: int, session: Session = Depends(get_session)):
+    db_transactions = get_transactions_by_item(session, item_id)
+    return db_transactions
 
+@app.get("/transactions", response_model=TransactionRead)
+def read_all_transactions(session: Session = Depends(get_session)):
+    db_transactions = get_all_transactions(session)
+    return db_transactions
+
+@app.delete("/transactions/{transaction_id}")
+def delete_existing_transaction(transaction_id: int, session: Session = Depends(get_session)):
+    success = delete_transaction(session, transaction_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+    return {"ok": True}
+
+
+# *************** END OF TRANSACTION ENDPOINTS **********************
 
 
 # Stock Threshold endpoints

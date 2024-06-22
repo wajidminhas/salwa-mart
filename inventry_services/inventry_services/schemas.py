@@ -17,13 +17,13 @@ class CategoryRead(BaseModel):
 class SupplierCreate(BaseModel):
     name: str
     contact_info: Optional[str] = None
-    email: Optional[str] = None
+    # email: Optional[str] = None  # Add this line
 
 class SupplierRead(BaseModel):
     id: int
     name: str
     contact_info: Optional[str] = None
-    email: Optional[str] = None
+    # email: Optional[str] = None  # Add this line
 
     class Config:
         orm_mode = True
